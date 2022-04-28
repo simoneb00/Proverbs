@@ -1,7 +1,8 @@
 package com.app.proverbs.ui.theme.layout
 
 import android.app.Application
-import android.graphics.drawable.Icon
+import android.content.Context
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,23 +14,18 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.sharp.Home
-import androidx.compose.material.icons.twotone.Home
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight.Companion.Bold
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
+import com.app.proverbs.database.RepositoryProverb
 import com.app.proverbs.ui.theme.Purple700
-import com.app.proverbs.ui.theme.layout.ScreenRouter.prov
 
 @Composable
 fun MainScreen(vm: MainViewModel, prov: List<Proverb>) {
@@ -58,8 +54,7 @@ fun MainScreen(vm: MainViewModel, prov: List<Proverb>) {
                 ) {
 
                     IconButton(onClick = {
-                        val proverb: Proverb = Proverb()
-                        ScreenRouter.navigateTo(3, proverb)
+                        ScreenRouter.navigateTo(3)
                     }) {
                         Icon(
                             Icons.Default.Favorite,
@@ -130,7 +125,6 @@ fun MainScreen(vm: MainViewModel, prov: List<Proverb>) {
         }
     }, content = {
 
-
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
@@ -154,7 +148,7 @@ fun MainScreen(vm: MainViewModel, prov: List<Proverb>) {
                     ) {
 
                         TextButton(
-                            onClick = { ScreenRouter.navigateTo(2, proverb) },
+                            onClick = { ScreenRouter.showProverb(proverb) },
                             colors = ButtonDefaults.buttonColors(backgroundColor = Color.Transparent),
                         )
                         {
@@ -186,65 +180,78 @@ fun MainScreen(vm: MainViewModel, prov: List<Proverb>) {
 
 
 @Composable
-fun ProverbScreen(proverb: Proverb) {
+fun ProverbScreen(context: Context, viewModel: MainViewModel, proverb: Proverb, isFavorite: Boolean) {
 
-    var color: Color by remember { mutableStateOf(Color.Black) }
-    var isRed: Boolean by remember { mutableStateOf(false) }
+    val col: Color = if (isFavorite) Color.Red else Color.Black
+    var color: Color by remember { mutableStateOf(col) }
+    val rep = RepositoryProverb(viewModel.dao)
+    var newText by remember { mutableStateOf(proverb.text) }
 
-    Column(
-        modifier = Modifier.padding(20.dp),
-    ) {
+    Scaffold(topBar = {
+        TopAppBar(contentColor = Color.White) {
 
-        IconButton(
-            onClick = {
-                if (!isRed) {
-                    color = Color.Red
-                    isRed = true
-                } else {
-                    color = Color.Black
-                    isRed = false
-                }
-            }, modifier = Modifier
-                .align(Alignment.End)
-                .padding(vertical = 12.dp)
-                .size(23.dp)
-        ) {
-            Icon(
-                Icons.Filled.Favorite,
-                contentDescription = "",
-                tint = color
+            Text(
+                text = "Proverbi",
+                modifier = Modifier.padding(horizontal = 20.dp),
+                fontSize = 20.sp,
+                fontWeight = Bold
             )
         }
-
-
-        Card(backgroundColor = Color(0xFFFFF8DC), modifier = Modifier.fillMaxWidth()) {
-            var newProverbText: String = ""
-            TextField(
-                value = proverb.text,
-                onValueChange = { newProverbText = it })
-        }
-
-        Row(
-            modifier = Modifier
-                .padding(vertical = 12.dp)
-                .align(Alignment.End)
+    }, content = {
+        Column(
+            modifier = Modifier.padding(20.dp),
         ) {
-            Button(onClick = {
-                val proverb: Proverb = Proverb()
-                ScreenRouter.navigateTo(1, proverb)
-            }, modifier = Modifier.padding(horizontal = 10.dp)) {
-                Text(text = "Indietro")
+
+            IconButton(
+                onClick = {
+                    if (color != Color.Red) {
+                        color = Color.Red
+                        rep.addToFavorites(proverb)
+                    } else {
+                        color = Color.Black
+                        rep.removeFromFavorites(proverb)
+                    }
+                }, modifier = Modifier
+                    .align(Alignment.End)
+                    .padding(vertical = 12.dp)
+                    .size(23.dp)
+            ) {
+                Icon(
+                    Icons.Filled.Favorite,
+                    contentDescription = "",
+                    tint = color
+                )
             }
-            Button(onClick = { /*TODO*/ }) {
-                Text(text = "Salva")
+
+
+            Card(backgroundColor = Color(0xFFFFF8DC), modifier = Modifier.fillMaxWidth()) {
+                TextField(value = newText, onValueChange = { newText = it })
+            }
+
+            Row(
+                modifier = Modifier
+                    .padding(vertical = 12.dp)
+                    .align(Alignment.End)
+            ) {
+                Button(onClick = {
+                    ScreenRouter.navigateTo(1)
+                }, modifier = Modifier.padding(horizontal = 10.dp)) {
+                    Text(text = "Indietro")
+                }
+                Button(onClick = {
+                    rep.updateProverbText(proverb, newText)
+                    Toast.makeText(context, "Elemento salvato correttamente", Toast.LENGTH_SHORT).show()
+                }) {
+                    Text(text = "Salva")
+                }
             }
         }
-    }
+    })
 
 }
 
 @Composable
-fun favoritesScreen(prov: List<Proverb>) {
+fun FavoritesScreen(prov: List<Proverb>) {
 
     var keyword by remember { mutableStateOf("") }
     var searchButtonClicked by remember { mutableStateOf(false) }
@@ -270,8 +277,7 @@ fun favoritesScreen(prov: List<Proverb>) {
                 ) {
 
                     IconButton(onClick = {
-                        val proverb: Proverb = Proverb()
-                        ScreenRouter.navigateTo(1, proverb)
+                        ScreenRouter.navigateTo(1)
                     }) {
                         Icon(
                             Icons.Sharp.Home,
@@ -282,8 +288,7 @@ fun favoritesScreen(prov: List<Proverb>) {
                     }
 
                     IconButton(onClick = {
-                        val proverb: Proverb = Proverb()
-                        ScreenRouter.navigateTo(3, proverb)
+                        ScreenRouter.navigateTo(3)
                     }) {
                         Icon(
                             Icons.Default.Favorite,
@@ -379,7 +384,7 @@ fun favoritesScreen(prov: List<Proverb>) {
                     ) {
 
                         TextButton(
-                            onClick = { ScreenRouter.navigateTo(2, proverb) },
+                            onClick = { ScreenRouter.showProverb(proverb) },
                             colors = ButtonDefaults.buttonColors(backgroundColor = Color.Transparent),
                         )
                         {

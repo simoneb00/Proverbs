@@ -26,4 +26,13 @@ interface DaoProverb {
 
     @Query("SELECT * FROM Proverb WHERE text LIKE :filter ORDER BY text")
     fun filterProverbs(filter: String): LiveData<List<Proverb>>
+
+    @Query("UPDATE Proverb SET favorite = 1 WHERE id = :id")
+    fun addToFavorites(id: Int)
+
+    @Query("UPDATE Proverb SET favorite = 0 WHERE id = :id")
+    fun removeFromFavorites(id: Int)
+
+    @Query("UPDATE Proverb SET text = :text where id = :id")
+    fun updateProverbText(id: Int, text: String)
 }
