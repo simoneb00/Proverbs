@@ -10,9 +10,9 @@ class RepositoryProverb(private val daoProverb: DaoProverb) {
     val allProverbs: LiveData<List<Proverb>> = daoProverb.getAll()
     val favoriteProverbs: LiveData<List<Proverb>> = daoProverb.getFavorites()
 
-    fun insertProverbs(proverbs: List<Proverb>) {
+    fun insertProverb(proverb: Proverb) {
         CoroutineScope(Dispatchers.IO).launch {
-            daoProverb.insertAll(proverbs)
+            daoProverb.insertNewProverb(proverb)
         }
     }
 

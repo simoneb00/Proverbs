@@ -6,8 +6,8 @@ import com.app.proverbs.model.Proverb
 
 @Dao
 interface DaoProverb {
-    @Insert
-    fun insertAll(proverbs: List<Proverb>)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    fun insertNewProverb(vararg proverb: Proverb)
 
     @Delete
     fun removeProverb(proverb: Proverb)

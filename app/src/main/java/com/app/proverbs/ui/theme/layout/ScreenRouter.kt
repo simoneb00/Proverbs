@@ -35,20 +35,16 @@ fun ProverbsLayout() {
 
     val allProverbs by viewModel.allProverbs.observeAsState(listOf())
     val favoriteProverbs by viewModel.favoriteProverbs.observeAsState(listOf())
-    var isFavorite = false
 
     when (ScreenRouter.currentScreen.value) {
         1 -> MainScreen(viewModel, allProverbs)
 
         2 -> {
-            for (i in favoriteProverbs.indices) {
-                if (favoriteProverbs[i].id == prov.id)
-                    isFavorite = true
-            }
-            ProverbScreen(LocalContext.current.applicationContext, viewModel, prov, isFavorite)
-
+            ProverbScreen(LocalContext.current.applicationContext, viewModel, prov)
         }
 
         3 -> FavoritesScreen(favoriteProverbs)
+
+        4 -> NewProverbScreen(LocalContext.current.applicationContext, viewModel)
     }
 }

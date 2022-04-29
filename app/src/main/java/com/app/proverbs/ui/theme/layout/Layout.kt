@@ -2,6 +2,7 @@ package com.app.proverbs.ui.theme.layout
 
 import android.app.Application
 import android.content.Context
+import android.provider.ContactsContract
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -11,6 +12,7 @@ import com.app.proverbs.viewmodel.MainViewModel
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -19,11 +21,18 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight.Companion.Bold
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupPositionProvider
+import androidx.compose.ui.window.PopupProperties
 import com.app.proverbs.database.RepositoryProverb
 import com.app.proverbs.ui.theme.Purple700
 
@@ -171,18 +180,78 @@ fun MainScreen(vm: MainViewModel, prov: List<Proverb>) {
                 }
 
             }
-
-
         }
+    },
+        floatingActionButton = {
+            FloatingActionButton(onClick = {
+                val proverb = Proverb()
+                ScreenRouter.navigateTo(4)
+            }, backgroundColor = Purple700) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Add Button Icon",
+                    tint = Color.White
+                )
+            }
+        }
+    )
+}
 
+@Composable
+fun NewProverbScreen(context: Context, viewModel: MainViewModel) {
+
+    var text by remember { mutableStateOf("") }
+    val rep = RepositoryProverb(viewModel.dao)
+
+    Scaffold(topBar = {
+        TopAppBar(contentColor = Color.White) {
+
+            Text(
+                text = "Proverbi",
+                modifier = Modifier.padding(horizontal = 20.dp),
+                fontSize = 20.sp,
+                fontWeight = Bold
+            )
+        }
+    }, content = {
+        Column(
+            modifier = Modifier.padding(20.dp),
+        ) {
+
+            Card(backgroundColor = Color(0xFFFFF8DC), modifier = Modifier.fillMaxWidth()) {
+                TextField(value = text, onValueChange = { text = it })
+            }
+
+            Row(
+                modifier = Modifier
+                    .padding(vertical = 12.dp)
+                    .align(Alignment.End)
+            ) {
+                Button(onClick = {
+                    ScreenRouter.navigateTo(1)
+                }, modifier = Modifier.padding(horizontal = 10.dp)) {
+                    Text(text = "Indietro")
+                }
+                Button(onClick = {
+                    val proverb = Proverb()
+                    proverb.text = text
+                    rep.insertProverb(proverb)
+                    Toast.makeText(context, "Elemento inserito correttamente", Toast.LENGTH_SHORT)
+                        .show()
+                }) {
+                    Text(text = "Inserisci")
+                }
+            }
+        }
     })
 }
 
 
-@Composable
-fun ProverbScreen(context: Context, viewModel: MainViewModel, proverb: Proverb, isFavorite: Boolean) {
 
-    val col: Color = if (isFavorite) Color.Red else Color.Black
+@Composable
+fun ProverbScreen(context: Context, viewModel: MainViewModel, proverb: Proverb) {
+
+    val col: Color = if (proverb.favorite == 1) Color.Red else Color.Black
     var color: Color by remember { mutableStateOf(col) }
     val rep = RepositoryProverb(viewModel.dao)
     var newText by remember { mutableStateOf(proverb.text) }
@@ -240,7 +309,8 @@ fun ProverbScreen(context: Context, viewModel: MainViewModel, proverb: Proverb, 
                 }
                 Button(onClick = {
                     rep.updateProverbText(proverb, newText)
-                    Toast.makeText(context, "Elemento salvato correttamente", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Elemento salvato correttamente", Toast.LENGTH_SHORT)
+                        .show()
                 }) {
                     Text(text = "Salva")
                 }
@@ -413,21 +483,3 @@ fun FavoritesScreen(prov: List<Proverb>) {
 
     })
 }
-
-
-@Preview
-@Composable
-fun PreviewFunction() {
-
-    val viewModel = MainViewModel(
-        LocalContext
-            .current.applicationContext as Application
-    )
-
-    val proverbs by viewModel.allProverbs.observeAsState(listOf())
-
-    MainScreen(vm = viewModel, prov = proverbs)
-}
-
-
-
