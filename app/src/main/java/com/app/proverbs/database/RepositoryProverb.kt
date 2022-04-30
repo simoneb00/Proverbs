@@ -33,4 +33,10 @@ class RepositoryProverb(private val daoProverb: DaoProverb) {
             daoProverb.updateProverbText(proverb.id, newText)
         }
     }
+
+    fun removeProverb(proverb: Proverb) {
+        CoroutineScope(Dispatchers.IO).launch {
+            daoProverb.removeProverb(proverb)
+        }
+    }
 }

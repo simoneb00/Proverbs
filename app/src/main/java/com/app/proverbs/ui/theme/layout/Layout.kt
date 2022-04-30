@@ -4,7 +4,11 @@ import android.app.Application
 import android.content.Context
 import android.provider.ContactsContract
 import android.widget.Toast
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import com.app.proverbs.model.Proverb
@@ -24,8 +28,11 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight.Companion.Bold
+import androidx.compose.ui.text.font.FontWeight.Companion.SemiBold
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
@@ -36,11 +43,13 @@ import androidx.compose.ui.window.PopupProperties
 import com.app.proverbs.database.RepositoryProverb
 import com.app.proverbs.ui.theme.Purple700
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun MainScreen(vm: MainViewModel, prov: List<Proverb>) {
+fun MainScreen(context: Context, vm: MainViewModel, prov: List<Proverb>) {
 
     var keyword by remember { mutableStateOf("") }
     var searchButtonClicked by remember { mutableStateOf(false) }
+    val rep = RepositoryProverb(vm.dao)
 
     Scaffold(topBar = {
 
@@ -153,20 +162,28 @@ fun MainScreen(vm: MainViewModel, prov: List<Proverb>) {
                     Column(
                         modifier = Modifier
                             .background(Color(0xFFFFF8DC))
-                            .padding(8.dp)
+                            .padding(8.dp).combinedClickable(
+                                onClick = { ScreenRouter.showProverb(proverb) },
+                                onLongClick = {
+                                    rep.removeProverb(proverb)
+                                    Toast
+                                        .makeText(
+                                            context,
+                                            "Elemento eliminato",
+                                            Toast.LENGTH_SHORT
+                                        )
+                                        .show()
+                                }
+                            )
                     ) {
-
-                        TextButton(
-                            onClick = { ScreenRouter.showProverb(proverb) },
-                            colors = ButtonDefaults.buttonColors(backgroundColor = Color.Transparent),
-                        )
-                        {
                             Text(
                                 text = proverb.text,
                                 fontSize = 20.sp,
-                                modifier = Modifier.background(Color(0xFFFFF8DC))
+                                modifier = Modifier.background(Color(0xFFFFF8DC)).fillMaxWidth(),
+                                textAlign = TextAlign.Center,
+                                fontWeight = SemiBold
                             )
-                        }
+
 
                         Divider(
                             color = Color.Black,
@@ -198,7 +215,7 @@ fun MainScreen(vm: MainViewModel, prov: List<Proverb>) {
 }
 
 @Composable
-fun NewProverbScreen(context: Context, viewModel: MainViewModel) {
+fun AddProverbScreen(context: Context, viewModel: MainViewModel) {
 
     var text by remember { mutableStateOf("") }
     val rep = RepositoryProverb(viewModel.dao)
@@ -235,6 +252,7 @@ fun NewProverbScreen(context: Context, viewModel: MainViewModel) {
                 Button(onClick = {
                     val proverb = Proverb()
                     proverb.text = text
+                    proverb.language = "Italiano"
                     rep.insertProverb(proverb)
                     Toast.makeText(context, "Elemento inserito correttamente", Toast.LENGTH_SHORT)
                         .show()
@@ -245,7 +263,6 @@ fun NewProverbScreen(context: Context, viewModel: MainViewModel) {
         }
     })
 }
-
 
 
 @Composable
@@ -271,26 +288,47 @@ fun ProverbScreen(context: Context, viewModel: MainViewModel, proverb: Proverb) 
             modifier = Modifier.padding(20.dp),
         ) {
 
-            IconButton(
-                onClick = {
-                    if (color != Color.Red) {
-                        color = Color.Red
-                        rep.addToFavorites(proverb)
-                    } else {
-                        color = Color.Black
-                        rep.removeFromFavorites(proverb)
-                    }
-                }, modifier = Modifier
-                    .align(Alignment.End)
-                    .padding(vertical = 12.dp)
-                    .size(23.dp)
+            Row(
+                horizontalArrangement = Arrangement.Start,
+                modifier = Modifier.align(Alignment.End)
             ) {
-                Icon(
-                    Icons.Filled.Favorite,
-                    contentDescription = "",
-                    tint = color
-                )
+                IconButton(
+                    onClick = {
+                        if (color != Color.Red) {
+                            color = Color.Red
+                            rep.addToFavorites(proverb)
+                        } else {
+                            color = Color.Black
+                            rep.removeFromFavorites(proverb)
+                        }
+                    }, modifier = Modifier
+                        .padding(vertical = 12.dp)
+                        .size(23.dp)
+                ) {
+                    Icon(
+                        Icons.Filled.Favorite,
+                        contentDescription = "Add to Favorites icon",
+                        tint = color
+                    )
+                }
+
+                IconButton(
+                    onClick = {
+                        rep.removeProverb(proverb)
+                        Toast.makeText(context, "Elemento eliminato", Toast.LENGTH_SHORT).show()
+                        ScreenRouter.navigateTo(1)
+                    }, modifier = Modifier
+                        .padding(vertical = 12.dp)
+                        .size(23.dp)
+                ) {
+                    Icon(
+                        Icons.Filled.Delete,
+                        contentDescription = "Delete icon",
+                        tint = Color.Black
+                    )
+                }
             }
+
 
 
             Card(backgroundColor = Color(0xFFFFF8DC), modifier = Modifier.fillMaxWidth()) {
@@ -311,6 +349,7 @@ fun ProverbScreen(context: Context, viewModel: MainViewModel, proverb: Proverb) 
                     rep.updateProverbText(proverb, newText)
                     Toast.makeText(context, "Elemento salvato correttamente", Toast.LENGTH_SHORT)
                         .show()
+                    ScreenRouter.navigateTo(1)
                 }) {
                     Text(text = "Salva")
                 }

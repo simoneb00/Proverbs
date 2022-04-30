@@ -37,14 +37,9 @@ fun ProverbsLayout() {
     val favoriteProverbs by viewModel.favoriteProverbs.observeAsState(listOf())
 
     when (ScreenRouter.currentScreen.value) {
-        1 -> MainScreen(viewModel, allProverbs)
-
-        2 -> {
-            ProverbScreen(LocalContext.current.applicationContext, viewModel, prov)
-        }
-
+        1 -> MainScreen(LocalContext.current.applicationContext, viewModel, allProverbs)
+        2 -> ProverbScreen(LocalContext.current.applicationContext, viewModel, prov)
         3 -> FavoritesScreen(favoriteProverbs)
-
-        4 -> NewProverbScreen(LocalContext.current.applicationContext, viewModel)
+        4 -> AddProverbScreen(LocalContext.current.applicationContext, viewModel)
     }
 }
